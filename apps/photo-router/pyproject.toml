@@ -1,0 +1,25 @@
+[project]
+name = "photo-router"
+version = "0.1.0"
+description = "Safely organize JPEG photos into year-based archive folders"
+readme = "README.md"
+authors = [
+    { name = "Marco Wegner", email = "673439+marvey11@users.noreply.github.com" },
+]
+requires-python = ">=3.12"
+dependencies = [
+    "codescape-shared-pie",
+    "pillow>=12.3.0",
+    "rich>=15.0.0",
+    "typer>=0.27.2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+codescape-shared-pie = { git = "https://github.com/marvey11/codescape-shared-pie.git", tag = "v0.1.2" }
+
+[project.scripts]
+photo-router = "photo_router.main:main"

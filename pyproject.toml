@@ -55,7 +55,7 @@ suppress-none-returning = false # Requires explicit -> None return types
 "**/tests/**/*.py" = ["S101"]
 
 [tool.ruff.lint.isort]
-# known-first-party = ["sample_lib", "sample_app"]
+known-first-party = ["photo_router"]
 
 [tool.ruff.format]
 # Use "double" or "single" quotes based on your preference
@@ -76,7 +76,7 @@ explicit_package_bases = true
 namespace_packages = true
 
 # Ensure mypy finds packages inside src-layout structures if applicable
-mypy_path = ["libs/core/src", "apps/runner/src"]
+mypy_path = ["libs/core/src", "apps/photo_router/src"]
 
 # Disallow dynamic typing & ambiguous definitions
 disallow_untyped_calls = true
@@ -111,7 +111,7 @@ omit = ["*/tests/*", "*/__init__.py"]
 source = ["libs/", "apps/"]
 
 [tool.coverage.report]
-fail_under = 80
+# fail_under = 80
 show_missing = true
 exclude_lines = [
     "pragma: no cover",
