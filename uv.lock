@@ -97,8 +97,8 @@ wheels = [
 
 [[package]]
 name = "codescape-shared-pie"
-version = "0.1.1"
-source = { git = "https://github.com/marvey11/codescape-shared-pie.git#02065bb4f2037be3a9245c095105270b7ffec77e" }
+version = "0.1.2"
+source = { git = "https://github.com/marvey11/codescape-shared-pie.git?tag=v0.1.2#b59d4f2a101c4fb1e24e7a861ce79311e654f1b6" }
 
 [[package]]
 name = "colorama"
@@ -499,7 +499,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "codescape-shared-pie", git = "https://github.com/marvey11/codescape-shared-pie.git" },
+    { name = "codescape-shared-pie", git = "https://github.com/marvey11/codescape-shared-pie.git?tag=v0.1.2" },
     { name = "pillow", specifier = ">=12.3.0" },
     { name = "rich", specifier = ">=15.0.0" },
     { name = "typer", specifier = ">=0.27.2" },
