@@ -3,6 +3,9 @@
 # ==========================================
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 
+# Install Git so uv can fetch Git-based dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt-get/lists/*
+
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     UV_COMPILE_BYTECODE=1 \
@@ -11,13 +14,23 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Copy workspace metadata files to cache dependency installation
+# Copy lockfile and package manifests
 COPY pyproject.toml uv.lock ./
 COPY apps/photo-router/pyproject.toml apps/photo-router/README.md ./apps/photo-router/
+
+# Pre-install third-party & Git dependencies (cached unless uv.lock / pyproject.toml changes)
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync \
+    --frozen \
+    --no-dev \
+    --no-editable \
+    --no-install-workspace \
+    --package photo-router
+
 # Copy full source code for workspace packages
 COPY apps/photo-router/src ./apps/photo-router/src
 
-# Perform final sync to install workspace packages into environment
+# Fast sync to install photo-router itself into .venv
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync \
     --frozen \
