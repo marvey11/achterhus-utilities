@@ -21,7 +21,7 @@ app = typer.Typer(
 
 TELEMETRY_API = os.getenv("TELEMETRY_API_URL", "http://localhost:8000")
 
-SERVICE_NAME = "audiothek-downloader"
+SERVICE_NAME = "photo-router"
 
 DATE_TAG_ID: Final[int] = 36867  # DateTimeOriginal
 LOGGER = logging.getLogger("photo_router")
