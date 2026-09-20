@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime
 from pathlib import Path  # noqa: TC003
 from typing import Annotated, Final
@@ -10,11 +11,18 @@ from codescape.util.fileutils import atomic_move
 from PIL import Image
 from rich.console import Console
 from rich.logging import RichHandler
+from telemetry.client import TelemetryClient
 
 app = typer.Typer(
     add_completion=False,
     help="Safely route JPEG photos into year-based folders.",
 )
+
+
+TELEMETRY_API = os.getenv("TELEMETRY_API_URL", "http://localhost:8000")
+
+SERVICE_NAME = "photo-router"
+
 DATE_TAG_ID: Final[int] = 36867  # DateTimeOriginal
 LOGGER = logging.getLogger("photo_router")
 
@@ -78,47 +86,55 @@ def organize_photos_secure(source_dir: Path, destination_dir: Path) -> None:
 
     destination_dir.mkdir(parents=True, exist_ok=True)
 
-    success_count = 0
-    skipped_count = 0
+    with TelemetryClient(TELEMETRY_API, service_name=SERVICE_NAME) as telemetry:
+        success_count = 0
+        skipped_count = 0
 
-    for file_path in sorted(source_dir.rglob("*")):
-        if not file_path.is_file() or file_path.suffix.lower() not in {".jpg", ".jpeg"}:
-            continue
-
-        try:
-            with Image.open(file_path) as image:
-                exif_data = image.getexif()
-                date_value = exif_data.get(DATE_TAG_ID) if exif_data else None
-
-            if date_value is None:
-                LOGGER.warning(
-                    "Skipped %s: missing EXIF DateTimeOriginal metadata.",
-                    file_path.name,
-                )
-                skipped_count += 1
+        for file_path in sorted(source_dir.rglob("*")):
+            if not file_path.is_file() or file_path.suffix.lower() not in {
+                ".jpg",
+                ".jpeg",
+            }:
                 continue
 
-            year = _resolve_photo_year(date_value)
-            target_dir = destination_dir / year
-            target_dir.mkdir(parents=True, exist_ok=True)
-            target_file_path = _new_target_path(target_dir, file_path)
+            try:
+                with Image.open(file_path) as image:
+                    exif_data = image.getexif()
+                    date_value = exif_data.get(DATE_TAG_ID) if exif_data else None
 
-            atomic_move(file_path, target_file_path, verify_hash=True)
-            success_count += 1
-            LOGGER.info(
-                "Routed %s to %s (integrity verified)",
-                file_path.name,
-                target_file_path.relative_to(destination_dir),
-            )
-        except (FileNotFoundError, OSError, ValueError, TypeError) as exc:
-            LOGGER.exception("Failed to process %s: %s", file_path.name, exc)
-            skipped_count += 1
+                if date_value is None:
+                    LOGGER.warning(
+                        "Skipped %s: missing EXIF DateTimeOriginal metadata.",
+                        file_path.name,
+                    )
+                    skipped_count += 1
+                    continue
 
-    LOGGER.info(
-        "Pipeline finished! Moved %s files. Skipped/failed: %s.",
-        success_count,
-        skipped_count,
-    )
+                year = _resolve_photo_year(date_value)
+                target_dir = destination_dir / year
+                target_dir.mkdir(parents=True, exist_ok=True)
+                target_file_path = _new_target_path(target_dir, file_path)
+
+                atomic_move(file_path, target_file_path, verify_hash=True)
+                success_count += 1
+                LOGGER.info(
+                    "Routed %s to %s (integrity verified)",
+                    file_path.name,
+                    target_file_path.relative_to(destination_dir),
+                )
+            except (FileNotFoundError, OSError, ValueError, TypeError) as exc:
+                LOGGER.exception("Failed to process %s: %s", file_path.name, exc)
+                skipped_count += 1
+
+        telemetry.set_metrics(
+            {"success_count": success_count, "skipped_count": skipped_count}
+        )
+
+        LOGGER.info(
+            "Pipeline finished! Moved %s files. Skipped/failed: %s.",
+            success_count,
+            skipped_count,
+        )
 
 
 @app.command()

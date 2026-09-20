@@ -6,15 +6,13 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 EnvironmentFile=%h/.config/achterhus/photo-router/env
-ExecStartPre=/usr/bin/mkdir -p %h/.achterhus/services/log
 ExecStart=/usr/bin/docker run --rm \
     --name photo-router \
+    --network ${DOCKER_NETWORK} \
+    -e TELEMETRY_API_URL=${TELEMETRY_API_URL} \
     -v ${PHOTO_SOURCE_DIR}:/source:rw \
     -v ${PHOTO_STORAGE_DIR}:/target:rw \
     ${DOCKER_IMAGE}
-
-StandardOutput=append:%h/.achterhus/services/log/%N.log
-StandardError=append:%h/.achterhus/services/log/%N.log
 
 [Install]
 WantedBy=default.target
