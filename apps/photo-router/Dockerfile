@@ -56,10 +56,7 @@ RUN groupadd -g 1000 appuser && \
 # Copy installed virtual environment from builder stage
 COPY --from=builder /app/.venv /app/.venv
 
-# Define volume mount points
-VOLUME ["/source", "/target"]
-
 USER appuser
 
 ENTRYPOINT ["photo-router"]
-CMD ["--source-dir", "/source", "--destination-dir", "/target"]
+CMD ["/source", "/target"]
