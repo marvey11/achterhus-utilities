@@ -14,8 +14,9 @@ from rich.logging import RichHandler
 from telemetry.client import TelemetryClient
 
 app = typer.Typer(
-    add_completion=False,
+    name="photo-router",
     help="Safely route JPEG photos into year-based folders.",
+    add_completion=False,
 )
 
 
@@ -141,23 +142,26 @@ def organize_photos_secure(source_dir: Path, destination_dir: Path) -> None:
 def main(
     source_dir: Annotated[
         Path,
-        typer.Option(
-            ...,
-            "--source-dir",
+        typer.Argument(
+            exists=True,
+            file_okay=False,
+            dir_okay=True,
+            readable=True,
             help="Directory containing the photo files to route.",
         ),
     ],
-    destination_dir: Annotated[
+    target_dir: Annotated[
         Path,
-        typer.Option(
-            ...,
-            "--destination-dir",
+        typer.Argument(
+            file_okay=False,
+            dir_okay=True,
+            writable=True,
             help="Base destination directory for the organized photos.",
         ),
     ],
 ) -> None:
     """Safely move JPEG photos from a source card to a structured archive."""
-    organize_photos_secure(source_dir, destination_dir)
+    organize_photos_secure(source_dir, target_dir)
 
 
 if __name__ == "__main__":
