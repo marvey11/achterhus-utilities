@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+from contextlib import nullcontext
 from datetime import datetime
 from pathlib import Path  # noqa: TC003
 from typing import Annotated, Final
@@ -87,7 +88,13 @@ def organize_photos_secure(source_dir: Path, destination_dir: Path) -> None:
 
     destination_dir.mkdir(parents=True, exist_ok=True)
 
-    with TelemetryClient(TELEMETRY_API, service_name=SERVICE_NAME) as telemetry:
+    telemetry_context = (
+        TelemetryClient(TELEMETRY_API, service_name=SERVICE_NAME)
+        if os.getenv("SERVICE_RUN_ID")
+        else nullcontext(None)
+    )
+
+    with telemetry_context as telemetry:
         success_count = 0
         skipped_count = 0
 
@@ -127,9 +134,10 @@ def organize_photos_secure(source_dir: Path, destination_dir: Path) -> None:
                 LOGGER.exception("Failed to process %s: %s", file_path.name, exc)
                 skipped_count += 1
 
-        telemetry.set_metrics(
-            {"success_count": success_count, "skipped_count": skipped_count}
-        )
+        if telemetry is not None:
+            telemetry.set_metrics(
+                {"success_count": success_count, "skipped_count": skipped_count}
+            )
 
         LOGGER.info(
             "Pipeline finished! Moved %s files. Skipped/failed: %s.",
