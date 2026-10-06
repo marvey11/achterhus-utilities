@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from pathlib import Path  # noqa: TC003
+from typing import TYPE_CHECKING
 
 from PIL import Image
-from pytest import MonkeyPatch  # noqa: TC002
 from typer.testing import CliRunner
 
 from photo_router.main import app, organize_photos_secure
+
+if TYPE_CHECKING:
+    from pytest import MonkeyPatch
 
 
 def test_organize_photos_secure_moves_jpegs_into_year_directories(
@@ -14,7 +17,7 @@ def test_organize_photos_secure_moves_jpegs_into_year_directories(
 ) -> None:
     source_dir = tmp_path / "source"
     source_dir.mkdir()
-    destination_dir = tmp_path / "destination"
+    target_dir = tmp_path / "target"
 
     jpg_path = source_dir / "vacation.jpg"
     exif = Image.Exif()
@@ -25,34 +28,34 @@ def test_organize_photos_secure_moves_jpegs_into_year_directories(
     png_path = source_dir / "not-a-photo.png"
     Image.new("RGB", (10, 10), color="red").save(png_path)
 
-    organize_photos_secure(source_dir, destination_dir)
+    organize_photos_secure(source_dir, target_dir)
 
     assert not jpg_path.exists()
-    assert (destination_dir / "2024" / "vacation.jpg").exists()
+    assert (target_dir / "2024" / "vacation.jpg").exists()
     assert png_path.exists()
 
 
-def test_cli_accepts_source_and_destination_arguments(
+def test_cli_accepts_source_and_target_arguments(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
 ) -> None:
     source_dir = tmp_path / "source"
-    destination_dir = tmp_path / "destination"
+    target_dir = tmp_path / "target"
     source_dir.mkdir()
-    destination_dir.mkdir()
+    target_dir.mkdir()
 
     captured: dict[str, Path] = {}
 
-    def fake_organize(source: Path, target: Path) -> None:
-        captured["source"] = source
-        captured["target"] = target
+    def fake_organize(source_dir: Path, target_dir: Path) -> None:
+        captured["source"] = source_dir
+        captured["target"] = target_dir
 
     monkeypatch.setattr("photo_router.main.organize_photos_secure", fake_organize)
 
     result = CliRunner().invoke(
         app,
-        ["--source-dir", str(source_dir), "--destination-dir", str(destination_dir)],
+        [str(source_dir), str(target_dir)],
     )
 
     assert result.exit_code == 0
-    assert captured == {"source": source_dir, "target": destination_dir}
+    assert captured == {"source": source_dir, "target": target_dir}
