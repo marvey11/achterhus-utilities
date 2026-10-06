@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path  # noqa: TC003
 from typing import TYPE_CHECKING
 
+import pytest
 from PIL import Image
 from typer.testing import CliRunner
 
@@ -33,6 +34,43 @@ def test_organize_photos_secure_moves_jpegs_into_year_directories(
     assert not jpg_path.exists()
     assert (target_dir / "2024" / "vacation.jpg").exists()
     assert png_path.exists()
+
+
+def test_organize_photos_secure_skips_jpegs_missing_exif(
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    target_dir = tmp_path / "target"
+
+    jpg_path = source_dir / "vacation.jpg"
+    Image.new("RGB", (10, 10), color="blue").save(jpg_path)
+
+    organize_photos_secure(source_dir, target_dir)
+
+    assert jpg_path.exists()
+    assert not (target_dir / "2024").exists()
+
+
+def test_organize_photos_secure_raises_for_missing_source_dir(
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "missing"
+    target_dir = tmp_path / "target"
+
+    with pytest.raises(FileNotFoundError, match="Source directory does not exist"):
+        organize_photos_secure(source_dir, target_dir)
+
+
+def test_organize_photos_secure_raises_for_file_source_path(
+    tmp_path: Path,
+) -> None:
+    source_dir = tmp_path / "source.txt"
+    source_dir.write_text("not a directory")
+    target_dir = tmp_path / "target"
+
+    with pytest.raises(NotADirectoryError, match="Source path is not a directory"):
+        organize_photos_secure(source_dir, target_dir)
 
 
 def test_cli_accepts_source_and_target_arguments(
