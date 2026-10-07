@@ -2,6 +2,11 @@
     // --- Python & Workspace Configuration ---
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
     "python.analysis.importFormat": "absolute",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/apps/document-router/src",
+        "${workspaceFolder}/apps/photo-router/src",
+        "${workspaceFolder}/libs/core/src"
+    ],
     // --- Testing Configuration (Pytest & uv) ---
     // Disable legacy unittest runner in favor of pytest
     "python.testing.unittestEnabled": false,

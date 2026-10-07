@@ -2,12 +2,15 @@
 
 ## Repository Overview
 
-`achterhus-utilities` is a Python 3.12 uv workspace for a home server utility collection.
+`achterhus-utilities` is a collection of tools for the `achterhus` home server.
+
+This repository is a Python monorepo managed by `uv`. Applications live under `apps/`, shared libraries live under `libs/`, and each workspace member is an independent Python package with a `src/` layout.
 
 The workspace members are declared in the root `pyproject.toml`:
 
-- `libs/core`: shared domain models, configuration, repositories, and services.
-- `apps/photo-router`: utility for safely routing digital photos in JPEG format to a storage location
+- `libs/core`: shared functionality used by the workspace applications.
+- `apps/document-router`: application for routing supported documents to permanent storage.
+- `apps/photo-router`: utility for safely routing digital photos in JPEG format to a storage location.
 
 The repository uses a `src` layout. Import packages through their installed package
 names, not by reaching into source directories with relative filesystem assumptions.
