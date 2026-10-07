@@ -13,10 +13,11 @@ Photo Router is a small CLI utility for moving JPEG photos from a source directo
 ## Usage
 
 ```bash
-photo-router --source-dir /mnt/card --destination-dir /srv/photos
+# photo-router <source_dir> <target_dir>
+photo-router /mnt/card /srv/photos
 ```
 
-This will scan the source directory, move each photo into a matching year folder under the destination, and keep the original file name unless a collision occurs.
+This will scan the source directory, move each photo into a matching year folder under the target, and keep the original file name unless a collision occurs.
 
 ## Example output
 
@@ -37,41 +38,4 @@ The application is available as a Docker image. The GitHub Actions workflow buil
 
 ```bash
 docker pull ghcr.io/marvey11/achterhus-utilities/photo-router:latest
-```
-
-## Running as a `systemd` service
-
-The `*.service` and `*.timer` units are stored in the `systemd` folder. Both the photo source directory, the archive target directory, and the Docker image can be configured via `~/.config/achterhus/photo-router/env`. An example configuration is available in `systemd/env.example`.
-
-The install helper script is `scripts/install_systemd.sh`. Run it from the repository root:
-
-```bash
-bash apps/photo-router/scripts/install_systemd.sh
-```
-
-The script creates the required configuration directory, copies the example environment file when needed, and installs the timer units into the user systemd directory.
-
-Useful `systemctl` commands:
-
-```bash
-# Reload systemd to discover the new unit files
-systemctl --user daemon-reload
-
-# Test the service execution manually once
-systemctl --user start photo-router.service
-
-# Check execution logs to verify success
-journalctl --user -u photo-router.service
-
-# Enable and start the timer
-systemctl --user enable --now photo-router.timer
-
-# Check upcoming timer runs
-systemctl --user list-timers
-
-# Verify timer status
-systemctl --user status photo-router.timer
-
-# Enable lingering so the user-level service runs while you are logged out
-loginctl enable-linger "$USER"
 ```
