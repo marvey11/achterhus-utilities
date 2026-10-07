@@ -32,7 +32,8 @@ def test_register_parser_rejects_duplicate_provider(tmp_path: Path) -> None:
 def test_engine_registers_built_in_parsers(tmp_path: Path) -> None:
     engine = DocumentRouterEngine(tmp_path, tmp_path / "target")
 
-    assert set(engine._parsers) == {"naturstrom", "ryd", "scalable", "vodafone"}
+    registered_providers = set(vars(engine)["_parsers"])
+    assert registered_providers == {"naturstrom", "ryd", "scalable", "vodafone"}
 
 
 def test_discover_and_plan_handles_provider_files_and_duplicates(

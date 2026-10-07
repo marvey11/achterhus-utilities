@@ -9,10 +9,11 @@ from document_router.core.models import ActionType
 from document_router.parsers import naturstrom, ryd, scalable
 from document_router.parsers.naturstrom import NaturstromParser
 from document_router.parsers.ryd import RydParser
+from document_router.parsers.scalable import ScalableParser
 from document_router.parsers.vodafone import VodafoneParser
 
 
-class FakePage:
+class DummyPage:
     def __init__(self, text: str | None) -> None:
         self.text = text
 
@@ -23,11 +24,10 @@ class FakePage:
 def test_ryd_parser_extracts_invoice_date(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setattr(
-        ryd,
-        "PdfReader",
-        lambda _: SimpleNamespace(pages=[FakePage("Rechnungsdatum:\n12.03.2025")]),
-    )
+    def _dummy_ryd_reader(_: Path) -> SimpleNamespace:
+        return SimpleNamespace(pages=[DummyPage("Rechnungsdatum:\n12.03.2025")])
+
+    monkeypatch.setattr(ryd, "PdfReader", _dummy_ryd_reader)
 
     result = RydParser().parse(tmp_path / "invoice.pdf")
 
@@ -69,11 +69,11 @@ def test_naturstrom_parser_extracts_invoice_metadata(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     text = "Vertragsnummer\n123456\nIhre Stromrechnung\nDatum\n12. März 2025"
-    monkeypatch.setattr(
-        naturstrom,
-        "PdfReader",
-        lambda _: SimpleNamespace(pages=[FakePage(text), FakePage(None)]),
-    )
+
+    def _dummy_reader(_: Path) -> SimpleNamespace:
+        return SimpleNamespace(pages=[DummyPage(text), DummyPage(None)])
+
+    monkeypatch.setattr(naturstrom, "PdfReader", _dummy_reader)
 
     result = NaturstromParser().parse(tmp_path / "invoice.pdf")
 
@@ -85,11 +85,10 @@ def test_naturstrom_parser_extracts_invoice_metadata(
 def test_naturstrom_parser_ignores_unmatched_document(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setattr(
-        naturstrom,
-        "PdfReader",
-        lambda _: SimpleNamespace(pages=[FakePage("unrelated document")]),
-    )
+    def _dummy_reader(_: Path) -> SimpleNamespace:
+        return SimpleNamespace(pages=[DummyPage("unrelated document")])
+
+    monkeypatch.setattr(naturstrom, "PdfReader", _dummy_reader)
 
     assert NaturstromParser().parse(tmp_path / "other.pdf") is None
 
@@ -103,9 +102,13 @@ def test_scalable_parser_uses_statement_year(
         statement_period_year=2024,
         document_date=date(2025, 1, 2),
     )
-    monkeypatch.setattr(scalable, "parse_document", lambda _: metadata)
 
-    result = scalable.ScalableParser().parse(tmp_path / "statement.pdf")
+    def _dummy_parse_document(_: Path) -> SimpleNamespace | None:
+        return metadata
+
+    monkeypatch.setattr(scalable, "parse_document", _dummy_parse_document)
+
+    result = ScalableParser().parse(tmp_path / "statement.pdf")
 
     assert result is not None
     assert result.target_subfolder == Path("finances/scalable/statements/2024")
@@ -120,6 +123,10 @@ def test_scalable_parser_ignores_other_banks(
         statement_period_year=None,
         document_date=None,
     )
-    monkeypatch.setattr(scalable, "parse_document", lambda _: metadata)
 
-    assert scalable.ScalableParser().parse(tmp_path / "statement.pdf") is None
+    def _dummy_parse_document(_: Path) -> SimpleNamespace | None:
+        return metadata
+
+    monkeypatch.setattr(scalable, "parse_document", _dummy_parse_document)
+
+    assert ScalableParser().parse(tmp_path / "statement.pdf") is None

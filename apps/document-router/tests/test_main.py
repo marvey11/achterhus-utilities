@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager, nullcontext
 from pathlib import Path
 from typing import ClassVar
@@ -11,14 +11,19 @@ from document_router.main import app
 
 
 class StubProcessor:
-    def execute_job(self, job: ProcessingJob) -> str:
+    def execute_job(self, _: ProcessingJob) -> str:
         return "MOVE -> archived.pdf"
+
+
+def _null_context(_: str) -> nullcontext[None]:
+    return nullcontext(None)
 
 
 class StubEngine:
     jobs: ClassVar[list[ProcessingJob]] = []
 
-    def __init__(self, *_: object, **__: object) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        del args, kwargs
         self.processor = StubProcessor()
 
     def discover_and_plan(self) -> list[ProcessingJob]:
@@ -29,9 +34,7 @@ def test_cli_reports_empty_source(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setattr("document_router.main.DocumentRouterEngine", StubEngine)
-    monkeypatch.setattr(
-        "document_router.main.telemetry_context", lambda _: nullcontext(None)
-    )
+    monkeypatch.setattr("document_router.main.telemetry_context", _null_context)
     StubEngine.jobs = []
 
     result = CliRunner().invoke(app, [str(tmp_path), str(tmp_path / "target")])
@@ -44,9 +47,7 @@ def test_cli_executes_and_displays_routing_job(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setattr("document_router.main.DocumentRouterEngine", StubEngine)
-    monkeypatch.setattr(
-        "document_router.main.telemetry_context", lambda _: nullcontext(None)
-    )
+    monkeypatch.setattr("document_router.main.telemetry_context", _null_context)
     source = tmp_path / "provider" / "invoice.pdf"
     StubEngine.jobs = [
         ProcessingJob(
@@ -72,9 +73,7 @@ def test_cli_returns_error_for_engine_failure(
             raise OSError("source unavailable")
 
     monkeypatch.setattr("document_router.main.DocumentRouterEngine", FailingEngine)
-    monkeypatch.setattr(
-        "document_router.main.telemetry_context", lambda _: nullcontext(None)
-    )
+    monkeypatch.setattr("document_router.main.telemetry_context", _null_context)
 
     result = CliRunner().invoke(app, [str(tmp_path), str(tmp_path / "target")])
 
@@ -95,7 +94,7 @@ def test_cli_reports_action_metrics(
     telemetry = FakeTelemetry()
 
     @contextmanager
-    def telemetry_scope(_: str) -> Iterator[FakeTelemetry]:
+    def telemetry_scope(_: str) -> Generator[FakeTelemetry, None, None]:
         yield telemetry
 
     monkeypatch.setattr("document_router.main.DocumentRouterEngine", StubEngine)

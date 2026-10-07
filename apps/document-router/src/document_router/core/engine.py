@@ -5,11 +5,7 @@ from pathlib import Path
 from document_router.core.models import ActionType, DocumentMetadata, ProcessingJob
 from document_router.core.processor import DocumentProcessor
 from document_router.core.utils import calculate_sha256
-from document_router.parsers.base import BaseDocumentParser
-from document_router.parsers.naturstrom import NaturstromParser
-from document_router.parsers.ryd import RydParser
-from document_router.parsers.scalable import ScalableParser
-from document_router.parsers.vodafone import VodafoneParser
+from document_router.parsers import PARSER_LIST, BaseDocumentParser
 
 
 class DocumentRouterEngine:
@@ -22,13 +18,8 @@ class DocumentRouterEngine:
         self.target_dir = target_dir.resolve()
         self.processor = DocumentProcessor(dry_run=dry_run)
         self._parsers: dict[str, BaseDocumentParser] = {}
-        for parser in (
-            NaturstromParser(),
-            RydParser(),
-            ScalableParser(),
-            VodafoneParser(),
-        ):
-            self.register_parser(parser)
+        for parser in PARSER_LIST:
+            self.register_parser(parser())
 
     def register_parser(self, parser: BaseDocumentParser) -> None:
         """Register a parser for its provider folder, rejecting duplicates."""
