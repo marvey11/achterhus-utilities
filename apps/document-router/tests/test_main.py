@@ -114,10 +114,10 @@ def test_cli_reports_action_metrics(
 
     assert result.exit_code == 0
     assert telemetry.metrics == {
-        "job_count": 1,
-        "moved_count": 1,
-        "copied_count": 0,
-        "ignored_count": 0,
-        "quarantined_count": 0,
+        "jobs": 1,
+        "moved": 1,
+        "copied": 0,
+        "ignored": 0,
+        "quarantined": 0,
         "dry_run": True,
     }

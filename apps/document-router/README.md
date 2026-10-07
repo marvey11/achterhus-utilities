@@ -37,7 +37,4 @@ docker run --rm \
 
 ## Telemetry
 
-When `SERVICE_RUN_ID` is set by the service orchestrator, the router reports
-`job_count`, `moved_count`, `copied_count`, `ignored_count`, `quarantined_count`,
-and `dry_run`. Set `TELEMETRY_API_URL` to select the telemetry service endpoint;
-it defaults to `http://localhost:8000`. Without a run ID, telemetry is disabled.
+When `SERVICE_RUN_ID` is set by the service orchestrator, the router reports `jobs`, `moved`, `copied`, `ignored`, `quarantined`, and `dry_run`. Set `TELEMETRY_API_URL` to select the telemetry service endpoint; it defaults to `http://localhost:8000`. Without a run ID, telemetry is disabled.
