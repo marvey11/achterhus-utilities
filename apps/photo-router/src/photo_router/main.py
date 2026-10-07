@@ -126,7 +126,7 @@ def organize_photos_secure(source_dir: Path, destination_dir: Path) -> None:
 
         if telemetry is not None:
             telemetry.set_metrics(
-                {"success_count": success_count, "skipped_count": skipped_count}
+                {"successful": success_count, "skipped": skipped_count}
             )
 
         LOGGER.info(

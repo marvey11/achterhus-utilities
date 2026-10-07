@@ -66,10 +66,10 @@ def main(
         with telemetry_context(SERVICE_NAME) as telemetry:
             jobs = engine.discover_and_plan()
             action_counts = {
-                "moved_count": 0,
-                "copied_count": 0,
-                "ignored_count": 0,
-                "quarantined_count": 0,
+                "moved": 0,
+                "copied": 0,
+                "ignored": 0,
+                "quarantined": 0,
             }
 
             if not jobs:
@@ -92,19 +92,19 @@ def main(
                         result_summary,
                     )
                     if result_summary.startswith("MOVE ->"):
-                        action_counts["moved_count"] += 1
+                        action_counts["moved"] += 1
                     elif result_summary.startswith("COPY ->"):
-                        action_counts["copied_count"] += 1
+                        action_counts["copied"] += 1
                     elif result_summary.startswith("IGNORE"):
-                        action_counts["ignored_count"] += 1
+                        action_counts["ignored"] += 1
                     else:
-                        action_counts["quarantined_count"] += 1
+                        action_counts["quarantined"] += 1
 
                 stdout_console.print(table)
 
             if telemetry is not None:
                 telemetry.set_metrics(
-                    {"job_count": len(jobs), **action_counts, "dry_run": dry_run}
+                    {"jobs": len(jobs), **action_counts, "dry_run": dry_run}
                 )
 
     except Exception as err:
