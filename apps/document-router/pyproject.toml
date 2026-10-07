@@ -1,16 +1,19 @@
 [project]
-name = "photo-router"
+name = "document-router"
 version = "0.1.0"
-description = "Safely organize JPEG photos into year-based archive folders"
+description = "Document routing application for the Achterhus home server"
 readme = "README.md"
 authors = [
     { name = "Marco Wegner", email = "673439+marvey11@users.noreply.github.com" },
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "codescape-bank-parse",
     "codescape-shared-pie",
     "core",
-    "pillow>=12.3.0",
+    "fonttools>=4.65.0",
+    "pydantic>=2.13.5",
+    "pypdf>=6.19.0",
     "rich>=15.0.0",
     "typer>=0.27.2",
 ]
@@ -21,7 +24,8 @@ build-backend = "hatchling.build"
 
 [tool.uv.sources]
 core = { workspace = true }
+codescape-bank-parse = { git = "https://github.com/marvey11/codescape-bank-parse.git", tag = "v0.1.0" }
 codescape-shared-pie = { git = "https://github.com/marvey11/codescape-shared-pie.git", tag = "v0.1.2" }
 
 [project.scripts]
-photo-router = "photo_router.main:app"
+document-router = "document_router.main:app"

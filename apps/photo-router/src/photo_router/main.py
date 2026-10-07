@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 import logging
-import os
-from contextlib import nullcontext
 from datetime import datetime
 from pathlib import Path  # noqa: TC003
 from typing import Annotated, Final
 
 import typer
 from codescape.util.fileutils import atomic_move
+from core.telemetry import telemetry_context
 from PIL import Image
 from rich.console import Console
 from rich.logging import RichHandler
-from telemetry.client import TelemetryClient
 
 app = typer.Typer(
     name="photo-router",
@@ -20,8 +18,6 @@ app = typer.Typer(
     add_completion=False,
 )
 
-
-TELEMETRY_API = os.getenv("TELEMETRY_API_URL", "http://localhost:8000")
 
 SERVICE_NAME = "photo-router"
 
@@ -88,13 +84,7 @@ def organize_photos_secure(source_dir: Path, destination_dir: Path) -> None:
 
     destination_dir.mkdir(parents=True, exist_ok=True)
 
-    telemetry_context = (
-        TelemetryClient(TELEMETRY_API, service_name=SERVICE_NAME)
-        if os.getenv("SERVICE_RUN_ID")
-        else nullcontext(None)
-    )
-
-    with telemetry_context as telemetry:
+    with telemetry_context(SERVICE_NAME) as telemetry:
         success_count = 0
         skipped_count = 0
 

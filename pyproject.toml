@@ -55,7 +55,7 @@ suppress-none-returning = false # Requires explicit -> None return types
 "**/tests/**/*.py" = ["S101"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["photo_router"]
+known-first-party = ["document_router", "photo_router"]
 
 [tool.ruff.format]
 # Use "double" or "single" quotes based on your preference
@@ -76,7 +76,11 @@ explicit_package_bases = true
 namespace_packages = true
 
 # Ensure mypy finds packages inside src-layout structures if applicable
-mypy_path = ["libs/core/src", "apps/photo_router/src"]
+mypy_path = [
+    "libs/core/src",
+    "apps/document-router/src",
+    "apps/photo-router/src",
+]
 
 # Disallow dynamic typing & ambiguous definitions
 disallow_untyped_calls = true

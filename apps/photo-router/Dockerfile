@@ -17,6 +17,8 @@ WORKDIR /app
 # Copy lockfile and package manifests
 COPY pyproject.toml uv.lock ./
 COPY apps/photo-router/pyproject.toml apps/photo-router/README.md ./apps/photo-router/
+COPY libs/core/pyproject.toml libs/core/README.md ./libs/core/
+COPY libs/core/src ./libs/core/src
 
 # Pre-install third-party & Git dependencies (cached unless uv.lock / pyproject.toml changes)
 RUN --mount=type=cache,target=/root/.cache/uv \
