@@ -3,7 +3,6 @@ from contextlib import contextmanager, nullcontext
 from pathlib import Path
 from typing import ClassVar
 
-from pytest import MonkeyPatch
 from pytest_mock import MockerFixture
 from typer.testing import CliRunner
 
@@ -32,11 +31,8 @@ class StubEngine:
         return self.jobs
 
 
-def test_cli_reports_empty_source(
-    monkeypatch: MonkeyPatch, mocker: MockerFixture, tmp_path: Path
-) -> None:
+def test_cli_reports_empty_source(mocker: MockerFixture, tmp_path: Path) -> None:
     mocker.patch.object(app_main, "DocumentRouterEngine", StubEngine)
-    monkeypatch.setenv("TELEMETRY_API_URL", "http://telemetry:9000")
     mocker.patch("document_router.main.telemetry_context", _null_context)
 
     StubEngine.jobs = []
@@ -48,10 +44,9 @@ def test_cli_reports_empty_source(
 
 
 def test_cli_executes_and_displays_routing_job(
-    monkeypatch: MonkeyPatch, mocker: MockerFixture, tmp_path: Path
+    mocker: MockerFixture, tmp_path: Path
 ) -> None:
     mocker.patch.object(app_main, "DocumentRouterEngine", StubEngine)
-    monkeypatch.setenv("TELEMETRY_API_URL", "http://telemetry:9000")
     mocker.patch("document_router.main.telemetry_context", _null_context)
 
     source = tmp_path / "provider" / "invoice.pdf"
@@ -73,13 +68,12 @@ def test_cli_executes_and_displays_routing_job(
 
 
 def test_cli_returns_error_for_engine_failure(
-    monkeypatch: MonkeyPatch, mocker: MockerFixture, tmp_path: Path
+    mocker: MockerFixture, tmp_path: Path
 ) -> None:
     class FailingEngine(StubEngine):
         def discover_and_plan(self) -> list[ProcessingJob]:
             raise OSError("source unavailable")
 
-    monkeypatch.setenv("TELEMETRY_API_URL", "http://telemetry:9000")
     mocker.patch.object(app_main, "DocumentRouterEngine", FailingEngine)
     mocker.patch("document_router.main.telemetry_context", _null_context)
 
@@ -89,9 +83,7 @@ def test_cli_returns_error_for_engine_failure(
     assert "source unavailable" in result.output
 
 
-def test_cli_reports_action_metrics(
-    monkeypatch: MonkeyPatch, mocker: MockerFixture, tmp_path: Path
-) -> None:
+def test_cli_reports_action_metrics(mocker: MockerFixture, tmp_path: Path) -> None:
     class FakeTelemetry:
         def __init__(self) -> None:
             self.metrics: dict[str, object] = {}
@@ -106,7 +98,6 @@ def test_cli_reports_action_metrics(
         yield telemetry
 
     mocker.patch.object(app_main, "DocumentRouterEngine", StubEngine)
-    monkeypatch.setenv("TELEMETRY_API_URL", "http://telemetry:9000")
     mocker.patch("document_router.main.telemetry_context", telemetry_scope)
 
     StubEngine.jobs = [

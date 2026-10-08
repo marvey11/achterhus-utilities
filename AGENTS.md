@@ -107,15 +107,14 @@ validating imports and types across all workspace packages.
 
 ```sh
 ./scripts/run_coverage.sh
-./scripts/run_coverage_with_output.sh
 uv run pytest
 uv run pytest -o addopts='' <path/to/test_file.py>
 uv run pytest -o addopts='' <path/to/test_file.py> -k <test_expression>
 ```
 
-The first command is the CI-equivalent full suite. It runs tests and checks coverage. The second is the same as the first, and it also writes terminal, XML, and HTML coverage reports
+The first command is the CI-equivalent full suite. It runs tests and checks coverage. By default, it does not output any HTML or XML coverage. This can be enabled with options, though.
 
-The third is useful for normal local test execution, but doesn't check coverage. It executes in considerably less time than the commands checking coverage.
+The second is useful for normal local test execution, but doesn't check coverage. It executes in considerably less time than the commands checking coverage.
 
 The last two are focused checks that disable the repository-wide
 coverage threshold so a small test slice can be evaluated quickly.
