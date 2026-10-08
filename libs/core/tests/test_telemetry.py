@@ -5,12 +5,11 @@ from typing import TYPE_CHECKING, Self, cast
 from core import telemetry
 
 if TYPE_CHECKING:
-    import pytest
+    from pytest import MonkeyPatch
+    from pytest_mock import MockerFixture
 
 
-def test_telemetry_context_is_disabled_without_run_id(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_telemetry_context_is_disabled_without_run_id(monkeypatch: MonkeyPatch) -> None:
     monkeypatch.delenv("SERVICE_RUN_ID", raising=False)
 
     with telemetry.telemetry_context("test-service") as client:
@@ -18,7 +17,7 @@ def test_telemetry_context_is_disabled_without_run_id(
 
 
 def test_telemetry_context_uses_configured_endpoint(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: MonkeyPatch, mocker: MockerFixture
 ) -> None:
     class FakeClient:
         def __init__(self, api_url: str, *, service_name: str) -> None:
@@ -33,7 +32,8 @@ def test_telemetry_context_uses_configured_endpoint(
 
     monkeypatch.setenv("SERVICE_RUN_ID", "run-123")
     monkeypatch.setenv("TELEMETRY_API_URL", "http://telemetry:9000")
-    monkeypatch.setattr(telemetry, "TelemetryClient", FakeClient)
+
+    mocker.patch.object(telemetry, "TelemetryClient", FakeClient)
 
     with telemetry.telemetry_context("test-service") as client:
         assert client is not None

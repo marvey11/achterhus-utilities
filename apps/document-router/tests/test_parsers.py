@@ -2,15 +2,18 @@ from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
 
-import pytest
 from codescape.parse import BankIdentifier, DocumentCategory
+from pytest_mock import MockerFixture
 
 from document_router.core.models import ActionType
-from document_router.parsers import naturstrom, ryd, scalable
-from document_router.parsers.naturstrom import NaturstromParser
-from document_router.parsers.ryd import RydParser
-from document_router.parsers.scalable import ScalableParser
-from document_router.parsers.vodafone import VodafoneParser
+from document_router.parsers import (
+    NaturstromParser,
+    RydParser,
+    ScalableParser,
+    VodafoneParser,
+    naturstrom,
+    ryd,
+)
 
 
 class DummyPage:
@@ -22,12 +25,11 @@ class DummyPage:
 
 
 def test_ryd_parser_extracts_invoice_date(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    mocker: MockerFixture, tmp_path: Path
 ) -> None:
-    def _dummy_ryd_reader(_: Path) -> SimpleNamespace:
-        return SimpleNamespace(pages=[DummyPage("Rechnungsdatum:\n12.03.2025")])
+    _dummy_reader = SimpleNamespace(pages=[DummyPage("Rechnungsdatum:\n12.03.2025")])
 
-    monkeypatch.setattr(ryd, "PdfReader", _dummy_ryd_reader)
+    mock_parse = mocker.patch.object(ryd, "PdfReader", return_value=_dummy_reader)
 
     result = RydParser().parse(tmp_path / "invoice.pdf")
 
@@ -35,20 +37,24 @@ def test_ryd_parser_extracts_invoice_date(
     assert result.document_date == date(2025, 3, 12)
     assert result.target_filename == "2025-03-12_invoice.pdf"
 
+    mock_parse.assert_called_once_with(tmp_path / "invoice.pdf")
+
 
 def test_ryd_parser_quarantines_reader_errors(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    mocker: MockerFixture, tmp_path: Path
 ) -> None:
-    def fail(_: Path) -> None:
-        raise OSError("unreadable")
 
-    monkeypatch.setattr(ryd, "PdfReader", fail)
+    mock_parse = mocker.patch.object(
+        ryd, "PdfReader", side_effect=OSError("unreadable")
+    )
 
     result = RydParser().parse(tmp_path / "bad.pdf")
 
     assert result is not None
     assert result.action == ActionType.QUARANTINE
     assert "unreadable" in (result.quarantine_reason or "")
+
+    mock_parse.assert_called_once_with(tmp_path / "bad.pdf")
 
 
 def test_vodafone_parser_accepts_valid_invoice_filename(tmp_path: Path) -> None:
@@ -66,14 +72,15 @@ def test_vodafone_parser_rejects_invalid_date(tmp_path: Path) -> None:
 
 
 def test_naturstrom_parser_extracts_invoice_metadata(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    mocker: MockerFixture, tmp_path: Path
 ) -> None:
     text = "Vertragsnummer\n123456\nIhre Stromrechnung\nDatum\n12. März 2025"
 
-    def _dummy_reader(_: Path) -> SimpleNamespace:
-        return SimpleNamespace(pages=[DummyPage(text), DummyPage(None)])
+    _dummy_reader = SimpleNamespace(pages=[DummyPage(text), DummyPage(None)])
 
-    monkeypatch.setattr(naturstrom, "PdfReader", _dummy_reader)
+    mock_parse = mocker.patch.object(
+        naturstrom, "PdfReader", return_value=_dummy_reader
+    )
 
     result = NaturstromParser().parse(tmp_path / "invoice.pdf")
 
@@ -81,20 +88,26 @@ def test_naturstrom_parser_extracts_invoice_metadata(
     assert result.document_date == date(2025, 3, 12)
     assert result.target_filename == "2025-03-12_Rechnung_123456.pdf"
 
+    mock_parse.assert_called_once_with(tmp_path / "invoice.pdf")
+
 
 def test_naturstrom_parser_ignores_unmatched_document(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    mocker: MockerFixture, tmp_path: Path
 ) -> None:
-    def _dummy_reader(_: Path) -> SimpleNamespace:
-        return SimpleNamespace(pages=[DummyPage("unrelated document")])
+    _dummy_reader = SimpleNamespace(pages=[DummyPage("unrelated document")])
 
-    monkeypatch.setattr(naturstrom, "PdfReader", _dummy_reader)
+    mock_parse = mocker.patch.object(
+        naturstrom, "PdfReader", return_value=_dummy_reader
+    )
 
-    assert NaturstromParser().parse(tmp_path / "other.pdf") is None
+    result = NaturstromParser().parse(tmp_path / "other.pdf")
+    assert result is None
+
+    mock_parse.assert_called_once_with(tmp_path / "other.pdf")
 
 
 def test_scalable_parser_uses_statement_year(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    mocker: MockerFixture, tmp_path: Path
 ) -> None:
     metadata = SimpleNamespace(
         bank=BankIdentifier.SCALABLE,
@@ -103,19 +116,20 @@ def test_scalable_parser_uses_statement_year(
         document_date=date(2025, 1, 2),
     )
 
-    def _dummy_parse_document(_: Path) -> SimpleNamespace | None:
-        return metadata
-
-    monkeypatch.setattr(scalable, "parse_document", _dummy_parse_document)
+    mock_parse = mocker.patch(
+        "document_router.parsers.scalable.parse_document", return_value=metadata
+    )
 
     result = ScalableParser().parse(tmp_path / "statement.pdf")
 
     assert result is not None
     assert result.target_subfolder == Path("finances/scalable/statements/2024")
 
+    mock_parse.assert_called_once_with(tmp_path / "statement.pdf")
+
 
 def test_scalable_parser_ignores_other_banks(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    mocker: MockerFixture, tmp_path: Path
 ) -> None:
     metadata = SimpleNamespace(
         bank="other",
@@ -124,9 +138,12 @@ def test_scalable_parser_ignores_other_banks(
         document_date=None,
     )
 
-    def _dummy_parse_document(_: Path) -> SimpleNamespace | None:
-        return metadata
+    mock_parse = mocker.patch(
+        "document_router.parsers.scalable.parse_document", return_value=metadata
+    )
 
-    monkeypatch.setattr(scalable, "parse_document", _dummy_parse_document)
+    result = ScalableParser().parse(tmp_path / "statement.pdf")
 
-    assert ScalableParser().parse(tmp_path / "statement.pdf") is None
+    assert result is None
+
+    mock_parse.assert_called_once_with(tmp_path / "statement.pdf")
