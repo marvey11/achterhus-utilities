@@ -3,11 +3,12 @@ from contextlib import contextmanager, nullcontext
 from pathlib import Path
 from typing import ClassVar
 
-import pytest
+from pytest_mock import MockerFixture
 from typer.testing import CliRunner
 
+from document_router import app
+from document_router import main as app_main
 from document_router.core.models import DocumentMetadata, ProcessingJob
-from document_router.main import app
 
 
 class StubProcessor:
@@ -30,11 +31,10 @@ class StubEngine:
         return self.jobs
 
 
-def test_cli_reports_empty_source(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    monkeypatch.setattr("document_router.main.DocumentRouterEngine", StubEngine)
-    monkeypatch.setattr("document_router.main.telemetry_context", _null_context)
+def test_cli_reports_empty_source(mocker: MockerFixture, tmp_path: Path) -> None:
+    mocker.patch.object(app_main, "DocumentRouterEngine", StubEngine)
+    mocker.patch("document_router.main.telemetry_context", _null_context)
+
     StubEngine.jobs = []
 
     result = CliRunner().invoke(app, [str(tmp_path), str(tmp_path / "target")])
@@ -44,11 +44,13 @@ def test_cli_reports_empty_source(
 
 
 def test_cli_executes_and_displays_routing_job(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    mocker: MockerFixture, tmp_path: Path
 ) -> None:
-    monkeypatch.setattr("document_router.main.DocumentRouterEngine", StubEngine)
-    monkeypatch.setattr("document_router.main.telemetry_context", _null_context)
+    mocker.patch.object(app_main, "DocumentRouterEngine", StubEngine)
+    mocker.patch("document_router.main.telemetry_context", _null_context)
+
     source = tmp_path / "provider" / "invoice.pdf"
+
     StubEngine.jobs = [
         ProcessingJob(
             source_base_path=tmp_path,
@@ -66,14 +68,14 @@ def test_cli_executes_and_displays_routing_job(
 
 
 def test_cli_returns_error_for_engine_failure(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    mocker: MockerFixture, tmp_path: Path
 ) -> None:
     class FailingEngine(StubEngine):
         def discover_and_plan(self) -> list[ProcessingJob]:
             raise OSError("source unavailable")
 
-    monkeypatch.setattr("document_router.main.DocumentRouterEngine", FailingEngine)
-    monkeypatch.setattr("document_router.main.telemetry_context", _null_context)
+    mocker.patch.object(app_main, "DocumentRouterEngine", FailingEngine)
+    mocker.patch("document_router.main.telemetry_context", _null_context)
 
     result = CliRunner().invoke(app, [str(tmp_path), str(tmp_path / "target")])
 
@@ -81,9 +83,7 @@ def test_cli_returns_error_for_engine_failure(
     assert "source unavailable" in result.output
 
 
-def test_cli_reports_action_metrics(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_cli_reports_action_metrics(mocker: MockerFixture, tmp_path: Path) -> None:
     class FakeTelemetry:
         def __init__(self) -> None:
             self.metrics: dict[str, object] = {}
@@ -97,8 +97,9 @@ def test_cli_reports_action_metrics(
     def telemetry_scope(_: str) -> Generator[FakeTelemetry, None, None]:
         yield telemetry
 
-    monkeypatch.setattr("document_router.main.DocumentRouterEngine", StubEngine)
-    monkeypatch.setattr("document_router.main.telemetry_context", telemetry_scope)
+    mocker.patch.object(app_main, "DocumentRouterEngine", StubEngine)
+    mocker.patch("document_router.main.telemetry_context", telemetry_scope)
+
     StubEngine.jobs = [
         ProcessingJob(
             source_base_path=tmp_path,

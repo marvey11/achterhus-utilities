@@ -10,7 +10,7 @@ from typer.testing import CliRunner
 from photo_router.main import app, organize_photos_secure
 
 if TYPE_CHECKING:
-    from pytest import MonkeyPatch
+    from pytest_mock import MockerFixture
 
 
 def test_organize_photos_secure_moves_jpegs_into_year_directories(
@@ -74,21 +74,16 @@ def test_organize_photos_secure_raises_for_file_source_path(
 
 
 def test_cli_accepts_source_and_target_arguments(
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
+    tmp_path: Path, mocker: MockerFixture
 ) -> None:
     source_dir = tmp_path / "source"
     target_dir = tmp_path / "target"
     source_dir.mkdir()
     target_dir.mkdir()
 
-    captured: dict[str, Path] = {}
+    captured: dict[str, Path] = {"source": source_dir, "target": target_dir}
 
-    def fake_organize(source_dir: Path, target_dir: Path) -> None:
-        captured["source"] = source_dir
-        captured["target"] = target_dir
-
-    monkeypatch.setattr("photo_router.main.organize_photos_secure", fake_organize)
+    mocker.patch("photo_router.main.organize_photos_secure", return_value=captured)
 
     result = CliRunner().invoke(
         app,
