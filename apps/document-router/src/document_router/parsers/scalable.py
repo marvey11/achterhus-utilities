@@ -24,22 +24,10 @@ class ScalableParser(BaseDocumentParser):
         if metadata.bank != BankIdentifier.SCALABLE:
             return None
 
-        # For now, ignore documents that are not account statements
-        if metadata.category not in [DocumentCategory.ACCOUNT_STATEMENT]:
+        target_folder = self._construct_target_folder(metadata)
+
+        if target_folder is None:
             return None
-
-        year: int | None = None
-        if metadata.statement_period_year:
-            year = metadata.statement_period_year
-        elif metadata.document_date:
-            year = metadata.document_date.year
-
-        target_folder = (
-            Path("finances")
-            / "scalable"
-            / "statements"
-            / (str(year) if year else "unknown")
-        )
 
         return DocumentMetadata(
             provider=self.provider_id,
@@ -49,3 +37,36 @@ class ScalableParser(BaseDocumentParser):
             target_filename=file_path.name,
             action=ActionType.MOVE,
         )
+
+    def _construct_target_folder(self, metadata: BankDocumentMetadata) -> Path | None:
+        """Construct the target folder path based on the document metadata."""
+
+        if metadata.category == DocumentCategory.ACCOUNT_STATEMENT:
+            year: int | None = None
+            if metadata.statement_period_year:
+                year = metadata.statement_period_year
+            elif metadata.document_date:
+                year = metadata.document_date.year
+
+            return (
+                Path("finances")
+                / "scalable"
+                / "statements"
+                / (str(year) if year else "unknown")
+            )
+
+        if metadata.category in (
+            DocumentCategory.CORPORATE_ACTION,
+            DocumentCategory.SECURITY_TRANSACTION,
+        ):
+            if not metadata.security_identifier:
+                return None
+
+            return (
+                Path("finances")
+                / "scalable"
+                / "securities"
+                / metadata.security_identifier
+            )
+
+        return None
