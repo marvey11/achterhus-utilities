@@ -73,13 +73,14 @@ It runs these commands after installing dependencies:
 uv run ruff check .
 uv run ruff format --check .
 uv run --all-packages mypy .
+uv run pyright
 uv run --all-packages pytest
 ```
 
 Run the same sequence locally before submitting a change. Ruff lint checks rules
 configured in `pyproject.toml`, Ruff format check detects unformatted files, mypy
-runs strict type checking, and pytest runs the complete workspace suite with the
-configured coverage threshold.
+and Pyright run strict type checking, and pytest runs the complete workspace suite
+with the configured coverage threshold.
 
 ### Formatting and linting
 
@@ -98,10 +99,13 @@ resulting diff afterward. The CI-safe commands are the non-mutating checks.
 ```sh
 uv run mypy .
 uv run --all-packages mypy .
+uv run pyright
 ```
 
-The workspace-wide form used by CI is `uv run --all-packages mypy .`. Use it when
-validating imports and types across all workspace packages.
+The workspace-wide MyPy form used by CI is `uv run --all-packages mypy .`.
+Pyright checks the `apps` and `libs` trees using the root `pyproject.toml`
+configuration. Run both checkers when validating imports and types across the
+workspace.
 
 ### Tests and coverage
 
@@ -155,14 +159,15 @@ verify test discovery without executing tests.
 
 Also check the VS Code Problems view with Pylance enabled for every changed
 Python file and resolve reported errors before submitting the change. Pylance
-diagnostics complement -- but do not replace -- the workspace-wide mypy check.
+diagnostics complement -- but do not replace -- the workspace-wide MyPy and
+Pyright checks.
 
 ## Change Workflow
 
 1. Read the owning implementation and its neighboring tests before editing.
 2. Make the smallest change that addresses the requested behavior.
 3. Run a focused test or check immediately after the first edit.
-4. Run Ruff, mypy, and relevant tests for the touched packages.
+4. Run Ruff, mypy, Pyright, and relevant tests for the touched packages.
 5. Run the complete CI-equivalent sequence for cross-package or shared changes.
 6. Review `git diff` and ensure generated coverage artifacts or unrelated files are
    not included unintentionally.
@@ -172,7 +177,7 @@ diagnostics complement -- but do not replace -- the workspace-wide mypy check.
 Changes targeting `main` are validated by the `code-quality` job in
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) on pushes and pull requests.
 The workflow uses Python 3.12, installs with `uv sync --locked`, and requires all
-Ruff, mypy, and pytest checks to pass.
+Ruff, mypy, Pyright, and pytest checks to pass.
 
 Do not weaken lint, type, test, or coverage settings to make a change pass. Fix the
 underlying code or add focused tests for the behavior being changed.
