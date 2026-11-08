@@ -40,10 +40,10 @@ docker run --rm \
   document-router
 ```
 
-  The GitHub Actions workflow publishes the image to
-  `ghcr.io/marvey11/achterhus-utilities/document-router` when a matching GitHub
-  Release is published. A release tag such as `document-router-v1.2.3` produces
-  image tags `:1.2.3`, `:1.2`, and `:1`; `:latest` tracks builds from `main`.
+  Pushing a `document-router-v1.2.3` tag automatically creates a GitHub Release
+  with generated notes and publishes the image to
+  `ghcr.io/marvey11/achterhus-utilities/document-router` with tags `:1.2.3`,
+  `:1.2`, and `:1`. The `:latest` tag tracks builds from `main`.
 
   ## Telemetry
 

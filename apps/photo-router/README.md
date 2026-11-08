@@ -34,13 +34,13 @@ Pipeline finished! Moved 27 files. Skipped/failed: 2.
 
 ## Docker image
 
-The application is available as a Docker image. The GitHub Actions workflow builds
-and publishes it to GitHub Container Registry when a matching GitHub Release is
-published.
+The application is available as a Docker image. Pushing a
+`photo-router-v1.2.3` tag automatically creates a GitHub Release with generated
+notes and publishes the image to GitHub Container Registry.
 
 ```bash
 docker pull ghcr.io/marvey11/achterhus-utilities/photo-router:latest
 ```
 
-For a release tagged `photo-router-v1.2.3`, the published image is also available
-as `:1.2.3`, `:1.2`, and `:1`. The `latest` tag tracks builds from `main`.
+The image is available as `:1.2.3`, `:1.2`, and `:1`. The `latest` tag tracks
+builds from `main`.

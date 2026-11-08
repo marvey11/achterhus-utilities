@@ -106,9 +106,9 @@ docker build -f apps/photo-router/Dockerfile -t photo-router .
 ```
 
 The images use Python 3.14 and install only the selected app's locked dependencies.
-Published GitHub Releases use tags named
-`<application-name>-v<major>.<minor>.<patch>`, such as
-`photo-router-v1.2.3`. Release images receive full, `major.minor`, and `major`
+Pushing a tag named `<application-name>-v<major>.<minor>.<patch>`, such as
+`photo-router-v1.2.3`, automatically creates a GitHub Release with generated
+notes and publishes an image with full, `major.minor`, and `major`
 semantic-version tags. `latest` is reserved for pushes to `main`.
 
 ## Change Workflow

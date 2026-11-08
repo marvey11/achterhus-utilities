@@ -41,7 +41,7 @@ uv run --project apps/document-router pre-commit run --all-files
 
 Each application has its own usage instructions and Dockerfile. Images expect
 input and destination directories to be mounted inside the container. Images are
-published to `ghcr.io/marvey11/achterhus-utilities/<application>` when its
-GitHub Release is published with a matching `<application>-vX.Y.Z` tag. Release
-images receive `X.Y.Z`, `X.Y`, and `X` tags; `latest` is reserved for builds from
-the `main` branch.
+published to `ghcr.io/marvey11/achterhus-utilities/<application>` when a
+`<application>-vX.Y.Z` tag is pushed. The tag push automatically creates a
+GitHub Release with generated notes. Release images receive `X.Y.Z`, `X.Y`, and
+`X` tags; `latest` is reserved for builds from the `main` branch.
