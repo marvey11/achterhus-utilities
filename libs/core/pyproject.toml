@@ -1,12 +1,12 @@
 [project]
 name = "core"
 version = "0.1.0"
-description = "Add your description here"
+description = "Shared telemetry context for Achterhus worker applications"
 readme = "README.md"
 authors = [
     { name = "Marco Wegner", email = "673439+marvey11@users.noreply.github.com" },
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = ["achterhus-telemetry-client"]
 
 [tool.uv.sources]

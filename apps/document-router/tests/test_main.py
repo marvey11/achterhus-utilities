@@ -1,14 +1,19 @@
-from collections.abc import Generator
-from contextlib import contextmanager, nullcontext
-from pathlib import Path
-from typing import ClassVar
+from __future__ import annotations
 
-from pytest_mock import MockerFixture
+from contextlib import contextmanager, nullcontext
+from typing import TYPE_CHECKING, ClassVar
+
 from typer.testing import CliRunner
 
 from document_router import app
 from document_router import main as app_main
 from document_router.core.models import DocumentMetadata, ProcessingJob
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+    from pathlib import Path
+
+    from pytest_mock import MockerFixture
 
 
 class StubProcessor:
@@ -94,7 +99,7 @@ def test_cli_reports_action_metrics(mocker: MockerFixture, tmp_path: Path) -> No
     telemetry = FakeTelemetry()
 
     @contextmanager
-    def telemetry_scope(_: str) -> Generator[FakeTelemetry, None, None]:
+    def telemetry_scope(_: str) -> Generator[FakeTelemetry]:
         yield telemetry
 
     mocker.patch.object(app_main, "DocumentRouterEngine", StubEngine)

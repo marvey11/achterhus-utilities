@@ -1,8 +1,8 @@
 """Domain models for document routing and parsing lifecycle."""
 
-from datetime import date
+from datetime import date  # noqa: TC003
 from enum import Enum, auto
-from pathlib import Path
+from pathlib import Path  # noqa: TC003
 
 from pydantic import BaseModel
 

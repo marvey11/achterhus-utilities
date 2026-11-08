@@ -1,11 +1,16 @@
 """Main document routing engine connecting plugins, scanning, and execution."""
 
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from document_router.core.models import ActionType, DocumentMetadata, ProcessingJob
 from document_router.core.processor import DocumentProcessor
 from document_router.core.utils import calculate_sha256
 from document_router.parsers import PARSER_LIST, BaseDocumentParser
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class DocumentRouterEngine:

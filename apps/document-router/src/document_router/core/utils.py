@@ -1,6 +1,11 @@
+from __future__ import annotations
+
 import hashlib
 from datetime import datetime
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def calculate_sha256(file_path: Path) -> str:

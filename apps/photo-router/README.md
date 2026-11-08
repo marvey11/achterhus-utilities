@@ -28,14 +28,19 @@ Pipeline finished! Moved 27 files. Skipped/failed: 2.
 
 ## Requirements
 
-- Python 3.12+
+- Python 3.14+
 - The project dependencies are managed by `uv`.
 - The app expects a real photo source directory containing JPEG files with EXIF metadata.
 
 ## Docker image
 
-The application is available as a Docker image. The GitHub Actions workflow builds and publishes it to GitHub Container Registry.
+The application is available as a Docker image. The GitHub Actions workflow builds
+and publishes it to GitHub Container Registry when a matching GitHub Release is
+published.
 
 ```bash
 docker pull ghcr.io/marvey11/achterhus-utilities/photo-router:latest
 ```
+
+For a release tagged `photo-router-v1.2.3`, the published image is also available
+as `:1.2.3`, `:1.2`, and `:1`. The `latest` tag tracks builds from `main`.
