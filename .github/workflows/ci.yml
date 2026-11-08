@@ -1,11 +1,9 @@
+
 name: CI
 
 on:
   push:
     branches: [main]
-    tags:
-      - "document-router-v*"
-      - "photo-router-v*"
   pull_request:
     branches: [main]
   release:
@@ -13,7 +11,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 env:
   REGISTRY: ghcr.io
@@ -21,87 +18,67 @@ env:
 jobs:
   code-quality:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v7
 
       - name: Install uv and Python
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
-          version: "latest"
+          version: latest
           python-version: "3.14"
           enable-cache: true
 
-      - name: Install Document Router dependencies
-        run: uv sync --project apps/document-router --locked --group dev
-
-      - name: Install Photo Router dependencies
-        run: uv sync --project apps/photo-router --locked --group dev
+      - name: Install dependencies
+        run: |
+          uv sync --project apps/document-router --locked --group dev
+          uv sync --project apps/photo-router --locked --group dev
 
       - name: Validate release tag
-        if: github.event_name == 'release' || startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'release'
         env:
-          RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^(document-router|photo-router)-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Release tag '$RELEASE_TAG' must match <application-name>-v<major>.<minor>.<patch>." >&2
+            echo "Invalid release tag: $RELEASE_TAG" >&2
+            echo "Expected <application-name>-v<major>.<minor>.<patch>." >&2
             exit 1
           fi
 
-      - name: Run repository checks with Document Router
-        run: uv run --project apps/document-router pre-commit run --all-files
-
-      - name: Run repository checks with Photo Router
-        run: uv run --project apps/photo-router pre-commit run --all-files
+      - name: Run repository checks
+        run: |
+          uv run --project apps/document-router pre-commit run --all-files
+          uv run --project apps/photo-router pre-commit run --all-files
 
       - name: Run test suite and coverage
         run: ./scripts/run_coverage.sh
 
+
   docker-build-and-push:
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     needs: code-quality
+
+    permissions:
+      contents: read
+      packages: write
+
     strategy:
       matrix:
         app: [document-router, photo-router]
+
+    concurrency:
+      group: docker-${{ matrix.app }}-${{ github.ref }}
+      cancel-in-progress: false
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - name: Extract application release version
-        id: release
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
-          APP_NAME: ${{ matrix.app }}
-        run: |
-          version="0.0.0"
-          major_minor="0.0"
-          major="0"
-          publish="false"
-
-          if [[ "$GITHUB_EVENT_NAME" == "release" || "$GITHUB_REF" == refs/tags/* ]] \
-            && [[ "$RELEASE_TAG" == "${APP_NAME}-v"* ]] \
-            && [[ "$RELEASE_TAG" =~ ^${APP_NAME}-v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-            major="${BASH_REMATCH[1]}"
-            minor="${BASH_REMATCH[2]}"
-            patch="${BASH_REMATCH[3]}"
-            version="$major.$minor.$patch"
-            major_minor="$major.$minor"
-            publish="true"
-          elif [[ "$GITHUB_EVENT_NAME" == "release" || "$GITHUB_REF" == refs/tags/* ]] \
-            && [[ "$RELEASE_TAG" == "${APP_NAME}-v"* ]]; then
-            echo "Release tag '$RELEASE_TAG' does not match ${APP_NAME}-v<major>.<minor>.<patch>." >&2
-            exit 1
-          fi
-
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "major_minor=$major_minor" >> "$GITHUB_OUTPUT"
-          echo "major=$major" >> "$GITHUB_OUTPUT"
-          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v7
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
       - name: Log in to GitHub Container Registry
-        if: github.event_name == 'push' || (github.event_name == 'release' && steps.release.outputs.publish == 'true')
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
@@ -110,23 +87,18 @@ jobs:
 
       - name: Extract Docker metadata
         id: meta
-        if: github.event_name != 'release' || steps.release.outputs.publish == 'true'
         uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.app }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=${{ steps.release.outputs.version }},enable=${{ steps.release.outputs.publish == 'true' }}
-            type=raw,value=${{ steps.release.outputs.major_minor }},enable=${{ steps.release.outputs.publish == 'true' }}
-            type=raw,value=${{ steps.release.outputs.major }},enable=${{ steps.release.outputs.publish == 'true' }}
+            type=raw,value=latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
-        if: github.event_name != 'release' || steps.release.outputs.publish == 'true'
         with:
           context: .
           file: apps/${{ matrix.app }}/Dockerfile
-          push: ${{ github.event_name == 'push' || github.event_name == 'release' }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.app }}
