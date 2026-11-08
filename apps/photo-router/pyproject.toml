@@ -1,6 +1,6 @@
 [project]
 name = "photo-router"
-version = "0.1.0"
+version = "1.0.0"
 description = "Safely organize JPEG photos into year-based archive folders"
 readme = "README.md"
 authors = [
