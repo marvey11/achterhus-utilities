@@ -109,7 +109,8 @@ The images use Python 3.14 and install only the selected app's locked dependenci
 Pushing a tag named `<application-name>-v<major>.<minor>.<patch>`, such as
 `photo-router-v1.2.3`, automatically creates a GitHub Release with generated
 notes and publishes an image with full, `major.minor`, and `major`
-semantic-version tags. `latest` is reserved for pushes to `main`.
+semantic-version tags. Existing full-version images are immutable and skipped;
+the floating aliases can advance. `latest` is reserved for pushes to `main`.
 
 ## Change Workflow
 

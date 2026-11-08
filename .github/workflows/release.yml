@@ -12,7 +12,22 @@ permissions:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify release commit belongs to main
+        run: |
+          git fetch origin main:refs/remotes/origin/main
+
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Release tag must point to a commit contained in main." >&2
+            exit 1
+          fi
+
       - name: Validate application version tag
         env:
           TAG_NAME: ${{ github.ref_name }}
@@ -30,3 +45,108 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --title "$GITHUB_REF_NAME" \
             --generate-notes
+
+  docker-build-and-push:
+    needs: create-release
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        app: [document-router, photo-router]
+
+    concurrency:
+      group: docker-release-${{ matrix.app }}-${{ github.ref_name }}
+      cancel-in-progress: false
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Extract application release version
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          APP_NAME: ${{ matrix.app }}
+        run: |
+          if [[ "$RELEASE_TAG" =~ ^${APP_NAME}-v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            major="${BASH_REMATCH[1]}"
+            minor="${BASH_REMATCH[2]}"
+            patch="${BASH_REMATCH[3]}"
+
+            echo "version=$major.$minor.$patch" >> "$GITHUB_OUTPUT"
+            echo "major_minor=$major.$minor" >> "$GITHUB_OUTPUT"
+            echo "major=$major" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Docker Buildx
+        if: steps.release.outputs.skip != 'true'
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        if: steps.release.outputs.skip != 'true'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for existing immutable version image
+        id: existing-image
+        if: steps.release.outputs.skip != 'true'
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.app }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          if output=$(docker buildx imagetools inspect "$IMAGE:$VERSION" 2>&1); then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Immutable image $IMAGE:$VERSION already exists. Skipping."
+          elif grep -Eiq 'manifest unknown|not found|no such manifest' <<< "$output"; then
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          else
+            printf '%s\n' "$output" >&2
+            echo "Unable to determine whether $IMAGE:$VERSION exists." >&2
+            exit 1
+          fi
+
+      - name: Update floating tags from existing immutable image
+        if: steps.release.outputs.skip != 'true' && steps.existing-image.outputs.exists == 'true'
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}/${{ matrix.app }}
+          VERSION: ${{ steps.release.outputs.version }}
+          MAJOR_MINOR: ${{ steps.release.outputs.major_minor }}
+          MAJOR: ${{ steps.release.outputs.major }}
+        run: |
+          docker buildx imagetools create \
+            --tag "$IMAGE:$MAJOR_MINOR" \
+            --tag "$IMAGE:$MAJOR" \
+            "$IMAGE:$VERSION"
+
+          echo "Updated floating tags using immutable image $IMAGE:$VERSION."
+
+      - name: Extract Docker metadata
+        id: meta
+        if: steps.release.outputs.skip != 'true' && steps.existing-image.outputs.exists != 'true'
+        uses: docker/metadata-action@v6
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ matrix.app }}
+          tags: |
+            type=raw,value=${{ steps.release.outputs.version }}
+            type=raw,value=${{ steps.release.outputs.major_minor }}
+            type=raw,value=${{ steps.release.outputs.major }}
+
+      - name: Build and push Docker image
+        if: steps.release.outputs.skip != 'true' && steps.existing-image.outputs.exists != 'true'
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,scope=${{ matrix.app }},mode=max
