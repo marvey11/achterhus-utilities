@@ -44,8 +44,11 @@ jobs:
             exit 1
           fi
 
-      - name: Run repository checks
+      - name: Run repository checks with Document Router
         run: uv run --project apps/document-router pre-commit run --all-files
+
+      - name: Run repository checks with Photo Router
+        run: uv run --project apps/photo-router pre-commit run --all-files
 
       - name: Run test suite and coverage
         run: ./scripts/run_coverage.sh
