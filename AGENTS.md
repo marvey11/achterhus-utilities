@@ -2,30 +2,32 @@
 
 ## Repository Overview
 
-`achterhus-utilities` is a collection of tools for the `achterhus` home server.
+`achterhus-utilities` is a Python 3.14+ monorepo managed by `uv`. The independent
+worker applications live under `apps/`; shared code lives under `libs/`.
 
-This repository is a Python monorepo managed by `uv`. Applications live under `apps/`, shared libraries live under `libs/`, and each workspace member is an independent Python package with a `src/` layout.
+- `apps/document-router`: routes supported documents to permanent storage.
+- `apps/photo-router`: routes digital JPEG photos into year-based archive folders.
+- `libs/core`: local library providing the shared telemetry context manager.
 
-The workspace members are declared in the root `pyproject.toml`:
-
-- `libs/core`: shared functionality used by the workspace applications.
-- `apps/document-router`: application for routing supported documents to permanent storage.
-- `apps/photo-router`: utility for safely routing digital photos in JPEG format to a storage location.
+Each application is an independent uv project with its own `pyproject.toml`,
+`uv.lock`, and virtual environment. Both apps consume `libs/core` as a local path
+dependency. The root `pyproject.toml` contains shared tool configuration only; it
+is not a uv project or workspace.
 
 The repository uses a `src` layout. Import packages through their installed package
 names, not by reaching into source directories with relative filesystem assumptions.
 
 ## Source Boundaries
 
-- Put reusable domain behavior in `libs/core/src/core`.
-- Keep tests next to the package they validate, under the corresponding `tests`
-  directory.
+- Put reusable functionality shared by multiple applications in `libs/core/src/core`.
+- Keep application-specific behavior in that application's `src/` package.
+- Keep tests next to the package they validate, under its `tests/` directory.
 - Preserve public service and repository APIs unless the task explicitly requires a
   contract change.
 
 ## Development Conventions
 
-- Target Python 3.12 or newer.
+- Target Python 3.14 or newer.
 - Use 4 spaces and a maximum line length of 88 characters.
 - Use double-quoted strings, consistent with Ruff format configuration.
 - Add explicit annotations for functions, parameters, and return values.
@@ -38,146 +40,83 @@ names, not by reaching into source directories with relative filesystem assumpti
 - Raise exceptions with `from err` when converting an underlying error at a
   boundary, such as a CLI handler.
 - Avoid broad refactors and unrelated formatting changes.
-- Do not add comments that merely restate the code. Add a comment only when the
-  reason for a non-obvious decision cannot be expressed clearly in the code.
+- Add comments only when they explain a non-obvious decision.
 
-## Tests
+## Install and Run
 
-Tests use pytest and are discovered from `apps` and `libs` according to the root
-`pyproject.toml`.
-
-Use fixtures and monkeypatching to isolate services, repositories, filesystem paths,
-and other external state. For CLI tests, use `typer.testing.CliRunner` and assert
-exit codes plus meaningful output. Follow the existing worker test pattern when
-mocking a service factory.
-
-## Validation and Verification Commands
-
-Run commands from the repository root with uv available.
-
-### Install and synchronize
+Install each application's dependencies independently:
 
 ```sh
-uv sync --locked --all-packages --all-extras --dev
+uv sync --project apps/document-router --locked --group dev
+uv sync --project apps/photo-router --locked --group dev
 ```
 
-Use this before validation or when dependencies, workspace metadata, or `uv.lock`
-change. The locked form ensures the installed dependency graph matches the lockfile.
+Run a CLI through its own environment:
 
-### CI checks
+```sh
+uv run --project apps/document-router document-router /source /target
+uv run --project apps/photo-router photo-router /source /target
+```
+
+When changing an app's dependencies, regenerate its lockfile with
+`uv lock --project apps/<application>` and commit the corresponding
+`apps/<application>/uv.lock`. Do not add a root lockfile or merge the app
+dependency graphs.
+
+## Tests and Quality Checks
 
 The authoritative CI workflow is [.github/workflows/ci.yml](.github/workflows/ci.yml).
-It runs these commands after installing dependencies:
+It syncs both app environments and runs the same pre-commit hooks used locally:
 
 ```sh
-uv run ruff check .
-uv run ruff format --check .
-uv run --all-packages mypy .
-uv run pyright
-uv run --all-packages pytest
+uv run --project apps/document-router pre-commit run --all-files
 ```
 
-Run the same sequence locally before submitting a change. Ruff lint checks rules
-configured in `pyproject.toml`, Ruff format check detects unformatted files, mypy
-and Pyright run strict type checking, and pytest runs the complete workspace suite
-with the configured coverage threshold.
-
-### Formatting and linting
-
-```sh
-uv run ruff check .
-uv run ruff check . --fix
-uv run ruff format .
-uv run ruff format --check .
-```
-
-Use `--fix` and `ruff format .` only when you intend to modify files. Review the
-resulting diff afterward. The CI-safe commands are the non-mutating checks.
-
-### Type checking
-
-```sh
-uv run mypy .
-uv run --all-packages mypy .
-uv run pyright
-```
-
-The workspace-wide MyPy form used by CI is `uv run --all-packages mypy .`.
-Pyright checks the `apps` and `libs` trees using the root `pyproject.toml`
-configuration. Run both checkers when validating imports and types across the
-workspace.
-
-### Tests and coverage
+The hooks cover generic file checks, Bash, Markdown, Ruff lint/format, and Python
+type checks. Run the full test suite with its repository-wide coverage threshold:
 
 ```sh
 ./scripts/run_coverage.sh
-uv run pytest
-uv run pytest -o addopts='' <path/to/test_file.py>
-uv run pytest -o addopts='' <path/to/test_file.py> -k <test_expression>
+uv run --project apps/document-router pytest -o addopts='' \
+  apps/document-router/tests libs/core/tests
+uv run --project apps/photo-router pytest -o addopts='' \
+  apps/photo-router/tests
 ```
 
-The first command is the CI-equivalent full suite. It runs tests and checks coverage. By default, it does not output any HTML or XML coverage. This can be enabled with options, though.
+`scripts/run_mypy.sh` and `scripts/run_pyright.sh` run each app's type checker in
+both relevant project environments. Their pre-commit hooks run both scripts.
 
-The second is useful for normal local test execution, but doesn't check coverage. It executes in considerably less time than the commands checking coverage.
-
-The last two are focused checks that disable the repository-wide
-coverage threshold so a small test slice can be evaluated quickly.
-
-For the photo-router CLI tests, use:
+For a focused test, use the relevant app environment and test path, for example:
 
 ```sh
-uv run pytest -o addopts='' \
+uv run --project apps/photo-router pytest -o addopts='' \
   apps/photo-router/tests/test_main.py
 ```
 
-### Pre-commit verification
+Do not weaken lint, type, test, or coverage checks to make a change pass. Keep the
+pre-commit and CI check paths aligned.
+
+## Docker and Releases
+
+Build an application image from the repository root:
 
 ```sh
-uv run pre-commit run --all-files
-uv run pre-commit run --all-files --hook-stage pre-push
+docker build -f apps/document-router/Dockerfile -t document-router .
+docker build -f apps/photo-router/Dockerfile -t photo-router .
 ```
 
-The configured hooks verify the uv lockfile, large files, JSON, TOML, YAML,
-Markdown, EOFs, trailing whitespace, Ruff linting, and Ruff formatting. The
-pre-push stage also runs:
-
-```sh
-./scripts/run_coverage.sh
-```
-
-Run pre-commit after changing Python, configuration, workflow, or lock files.
-
-### Syntax and diagnostics
-
-```sh
-python -m compileall apps libs
-uv run pytest --collect-only
-```
-
-Use `compileall` for a quick Python syntax check and `pytest --collect-only` to
-verify test discovery without executing tests.
-
-Also check the VS Code Problems view with Pylance enabled for every changed
-Python file and resolve reported errors before submitting the change. Pylance
-diagnostics complement -- but do not replace -- the workspace-wide MyPy and
-Pyright checks.
+The images use Python 3.14 and install only the selected app's locked dependencies.
+Pushing a tag named `<application-name>-v<major>.<minor>.<patch>`, such as
+`photo-router-v1.2.3`, automatically creates a GitHub Release with generated
+notes and publishes an image with full, `major.minor`, and `major`
+semantic-version tags. `latest` is reserved for pushes to `main`.
 
 ## Change Workflow
 
-1. Read the owning implementation and its neighboring tests before editing.
-2. Make the smallest change that addresses the requested behavior.
-3. Run a focused test or check immediately after the first edit.
-4. Run Ruff, mypy, Pyright, and relevant tests for the touched packages.
-5. Run the complete CI-equivalent sequence for cross-package or shared changes.
-6. Review `git diff` and ensure generated coverage artifacts or unrelated files are
-   not included unintentionally.
-
-## CI and Pull Requests
-
-Changes targeting `main` are validated by the `code-quality` job in
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) on pushes and pull requests.
-The workflow uses Python 3.12, installs with `uv sync --locked`, and requires all
-Ruff, mypy, Pyright, and pytest checks to pass.
-
-Do not weaken lint, type, test, or coverage settings to make a change pass. Fix the
-underlying code or add focused tests for the behavior being changed.
+1. Inspect repository status and applicable instructions before editing.
+2. Read the owning implementation and neighboring tests.
+3. Make the smallest change that addresses the requested behavior.
+4. Run focused checks after the first edit.
+5. Run the relevant app checks and repository-wide coverage for shared changes.
+6. Review `git diff` and ensure generated artifacts or unrelated files are not
+   included.

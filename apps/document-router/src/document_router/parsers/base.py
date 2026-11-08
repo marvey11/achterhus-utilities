@@ -1,9 +1,14 @@
 """Base class and specification for provider document parsers."""
 
-from abc import ABC, abstractmethod
-from pathlib import Path
+from __future__ import annotations
 
-from document_router.core.models import DocumentMetadata
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from document_router.core.models import DocumentMetadata
 
 
 class BaseDocumentParser(ABC):

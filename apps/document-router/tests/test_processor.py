@@ -1,7 +1,12 @@
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from document_router.core.models import ActionType, DocumentMetadata, ProcessingJob
 from document_router.core.processor import DocumentProcessor
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def test_move_uses_atomic_move_and_preserves_file_content(tmp_path: Path) -> None:

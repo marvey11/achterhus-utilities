@@ -14,6 +14,11 @@ document-router /path/to/source /path/to/target
 Use `--dry-run` (or `-n`) to display the execution plan without changing files.
 Use `--verbose` (or `-v`) to include a traceback when an error occurs.
 
+## Requirements
+
+Document Router requires Python 3.14 or newer. Dependencies are managed with `uv`
+in the application's independent project environment.
+
 The source directory should contain provider subfolders, such as `naturstrom/`,
 `ryd/`, `scalable/`, or `vodafone/`. Files directly in the source root and files
 inside unregistered provider folders are skipped.
@@ -35,6 +40,11 @@ docker run --rm \
   document-router
 ```
 
-## Telemetry
+  Pushing a `document-router-v1.2.3` tag automatically creates a GitHub Release
+  with generated notes and publishes the image to
+  `ghcr.io/marvey11/achterhus-utilities/document-router` with tags `:1.2.3`,
+  `:1.2`, and `:1`. The `:latest` tag tracks builds from `main`.
+
+  ## Telemetry
 
 When `SERVICE_RUN_ID` is set by the service orchestrator, the router reports `jobs`, `moved`, `copied`, `ignored`, `quarantined`, and `dry_run`. Set `TELEMETRY_API_URL` to select the telemetry service endpoint; it defaults to `http://localhost:8000`. Without a run ID, telemetry is disabled.

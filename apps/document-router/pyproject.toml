@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Marco Wegner", email = "673439+marvey11@users.noreply.github.com" },
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = [
     "codescape-bank-parse",
     "codescape-shared-pie",
@@ -18,12 +18,23 @@ dependencies = [
     "typer>=0.27.2",
 ]
 
+[dependency-groups]
+dev = [
+    "mypy>=2.3.1",
+    "pre-commit>=4.6.2",
+    "pyright>=1.1.414",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "pytest-mock>=3.16.0",
+    "ruff>=0.16.4",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-core = { workspace = true }
+core = { path = "../../libs/core", editable = true }
 codescape-bank-parse = { git = "https://github.com/marvey11/codescape-bank-parse.git", tag = "v0.1.1" }
 codescape-shared-pie = { git = "https://github.com/marvey11/codescape-shared-pie.git", tag = "v0.1.2" }
 

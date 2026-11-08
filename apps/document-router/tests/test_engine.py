@@ -1,4 +1,6 @@
-from pathlib import Path
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -7,6 +9,9 @@ from document_router.core.models import ActionType, DocumentMetadata
 from document_router.core.utils import calculate_sha256
 from document_router.parsers.base import BaseDocumentParser
 from document_router.parsers.naturstrom import NaturstromParser
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class FixedParser(BaseDocumentParser):

@@ -1,9 +1,4 @@
 repos:
-  - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.13.5
-    hooks:
-      - id: uv-lock
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
@@ -19,7 +14,6 @@ repos:
     rev: v0.17.2
     hooks:
       - id: ruff
-        args: [--fix]
       - id: ruff-format
 
   - repo: https://github.com/koalaman/shellcheck-precommit
@@ -31,20 +25,31 @@ repos:
     rev: v0.50.0
     hooks:
       - id: markdownlint
-        # Optional: create a .markdownlint.json
-        args: ["--fix", "--disable", "MD013"] # MD013 disables line length limits
+        args: ["--disable", "MD013"]
 
   - repo: local
     hooks:
+      - id: document-router-lock
+        name: document-router lock
+        entry: uv lock --check --project apps/document-router
+        language: system
+        pass_filenames: false
+
+      - id: photo-router-lock
+        name: photo-router lock
+        entry: uv lock --check --project apps/photo-router
+        language: system
+        pass_filenames: false
+
       - id: mypy
         name: mypy
-        entry: uv run --all-packages mypy .
+        entry: scripts/run_mypy.sh
         language: system
         pass_filenames: false
 
       - id: pyright
         name: pyright
-        entry: uv run pyright
+        entry: scripts/run_pyright.sh
         language: system
         pass_filenames: false
 

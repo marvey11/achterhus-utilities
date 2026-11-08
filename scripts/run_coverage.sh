@@ -42,14 +42,20 @@ done
 
 echo "Running full test suite with coverage..."
 
-if ! uv run pytest \
-  --cov=apps \
-  --cov=libs \
+uv run --project apps/document-router coverage erase
+uv run --project apps/document-router pytest \
+  --cov=apps/document-router/src/document_router \
+  --cov=libs/core/src/core \
+  --cov-append \
   "${cov_reports[@]}" \
-  --cov-fail-under=80
-then
-  echo "❌ Tests failed or coverage below threshold."
-  exit 1
-fi
+  apps/document-router/tests \
+  libs/core/tests
+uv run --project apps/photo-router pytest \
+  --cov=apps/photo-router/src/photo_router \
+  --cov=libs/core/src/core \
+  --cov-append \
+  "${cov_reports[@]}" \
+  apps/photo-router/tests
+uv run --project apps/photo-router coverage report --fail-under=80
 
 echo "✅ All tests passed with sufficient coverage."

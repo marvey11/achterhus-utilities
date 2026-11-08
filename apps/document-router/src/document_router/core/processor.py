@@ -1,12 +1,17 @@
 """File manipulation engine handling collisions, moves, and copies."""
 
+from __future__ import annotations
+
 import shutil
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from codescape.util.fileutils import atomic_move
 
 from document_router.core.models import ActionType, ProcessingJob
 from document_router.core.utils import calculate_sha256
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class DocumentProcessor:

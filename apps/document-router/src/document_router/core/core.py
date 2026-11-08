@@ -1,5 +1,5 @@
 from enum import StrEnum
-from pathlib import Path
+from pathlib import Path  # noqa: TC003
 from typing import Any, Protocol
 
 from pydantic import BaseModel, Field

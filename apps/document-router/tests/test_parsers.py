@@ -1,9 +1,9 @@
 from datetime import date
 from pathlib import Path
 from types import SimpleNamespace
+from typing import TYPE_CHECKING
 
 from codescape.parse import BankIdentifier, DocumentCategory
-from pytest_mock import MockerFixture
 
 from document_router.core.models import ActionType
 from document_router.parsers import (
@@ -14,6 +14,9 @@ from document_router.parsers import (
     naturstrom,
     ryd,
 )
+
+if TYPE_CHECKING:
+    from pytest_mock import MockerFixture
 
 
 class DummyPage:
