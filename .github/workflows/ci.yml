@@ -40,7 +40,7 @@ jobs:
         run: uv run --project apps/${{ matrix.app }} ruff format --check .
 
       - name: MyPy Type-checking
-        run: uv run --project apps/${{ matrix.app }} mypy .
+        run: uv run --project apps/${{ matrix.app }} mypy apps/${{ matrix.app }} libs/core
 
       - name: Pyright Type-checking
         run: uv run --project apps/${{ matrix.app }} pyright
