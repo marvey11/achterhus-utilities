@@ -40,10 +40,10 @@ jobs:
         run: uv run --project apps/${{ matrix.app }} ruff format --check .
 
       - name: MyPy Type-checking
-        run: uv run --project apps/${{ matrix.app }} mypy apps/${{ matrix.app }} libs/core
+        run: ./scripts/run-mypy.sh ${{ matrix.app }}
 
       - name: Pyright Type-checking
-        run: uv run --project apps/${{ matrix.app }} pyright apps/${{ matrix.app }} libs/core
+        run: ./scripts/run-pyright.sh ${{ matrix.app }}
 
       - name: Run test suite and coverage
         run: ./scripts/run-coverage.sh
