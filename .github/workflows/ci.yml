@@ -43,7 +43,7 @@ jobs:
         run: uv run --project apps/${{ matrix.app }} mypy apps/${{ matrix.app }} libs/core
 
       - name: Pyright Type-checking
-        run: uv run --project apps/${{ matrix.app }} pyright
+        run: uv run --project apps/${{ matrix.app }} pyright apps/${{ matrix.app }} libs/core
 
       - name: Run test suite and coverage
         run: ./scripts/run-coverage.sh
