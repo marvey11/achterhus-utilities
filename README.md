@@ -36,7 +36,7 @@ Run the repository checks with:
 
 ```bash
 uv run --project apps/document-router pre-commit run --all-files
-./scripts/run_coverage.sh
+./scripts/run-coverage.sh
 ```
 
 Each application has its own usage instructions and Dockerfile. Images expect

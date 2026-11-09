@@ -11,7 +11,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.17.2
+    rev: v0.17.4
     hooks:
       - id: ruff
       - id: ruff-format
@@ -29,34 +29,28 @@ repos:
 
   - repo: local
     hooks:
-      - id: document-router-lock
-        name: document-router lock
-        entry: uv lock --check --project apps/document-router
-        language: system
-        pass_filenames: false
-
-      - id: photo-router-lock
-        name: photo-router lock
-        entry: uv lock --check --project apps/photo-router
+      - id: check-locks
+        name: check-locks
+        entry: ./scripts/check-locks.sh
         language: system
         pass_filenames: false
 
       - id: mypy
         name: mypy
-        entry: scripts/run_mypy.sh
+        entry: ./scripts/run-mypy.sh
         language: system
         pass_filenames: false
 
       - id: pyright
         name: pyright
-        entry: scripts/run_pyright.sh
+        entry: ./scripts/run-pyright.sh
         language: system
         pass_filenames: false
 
       # Run test suite across workspace before push
       - id: pytest
         name: pytest
-        entry: ./scripts/run_coverage.sh
+        entry: ./scripts/run-coverage.sh
         language: system
         pass_filenames: false
         stages: [pre-push]
