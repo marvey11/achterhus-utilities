@@ -16,6 +16,10 @@ jobs:
   code-quality:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        app: [document-router, photo-router]
+
     steps:
       - uses: actions/checkout@v7
 
@@ -27,17 +31,22 @@ jobs:
           enable-cache: true
 
       - name: Install dependencies
-        run: |
-          uv sync --project apps/document-router --locked --group dev
-          uv sync --project apps/photo-router --locked --group dev
+        run: uv sync --project apps/${{ matrix.app }} --locked --all-extras --group dev
 
-      - name: Run repository checks
-        run: |
-          uv run --project apps/document-router pre-commit run --all-files
-          uv run --project apps/photo-router pre-commit run --all-files
+      - name: Run Ruff Lint Check
+        run: uv run --project apps/${{ matrix.app }} ruff check .
+
+      - name: Run Ruff Format Check
+        run: uv run --project apps/${{ matrix.app }} ruff format --check .
+
+      - name: MyPy Type-checking
+        run: uv run --project apps/${{ matrix.app }} mypy .
+
+      - name: Pyright Type-checking
+        run: uv run --project apps/${{ matrix.app }} pyright
 
       - name: Run test suite and coverage
-        run: ./scripts/run_coverage.sh
+        run: ./scripts/run-coverage.sh
 
 
   docker-build-and-push:

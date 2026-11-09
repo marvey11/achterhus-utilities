@@ -76,14 +76,14 @@ The hooks cover generic file checks, Bash, Markdown, Ruff lint/format, and Pytho
 type checks. Run the full test suite with its repository-wide coverage threshold:
 
 ```sh
-./scripts/run_coverage.sh
+./scripts/run-coverage.sh
 uv run --project apps/document-router pytest -o addopts='' \
   apps/document-router/tests libs/core/tests
 uv run --project apps/photo-router pytest -o addopts='' \
   apps/photo-router/tests
 ```
 
-`scripts/run_mypy.sh` and `scripts/run_pyright.sh` run each app's type checker in
+`scripts/run-mypy.sh` and `scripts/run-pyright.sh` run each app's type checker in
 both relevant project environments. Their pre-commit hooks run both scripts.
 
 For a focused test, use the relevant app environment and test path, for example:
