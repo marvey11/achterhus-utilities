@@ -14,12 +14,22 @@ repos:
     rev: v0.17.4
     hooks:
       - id: ruff
+        pass_filenames: false
+        always_run: true
       - id: ruff-format
+        args: ["--check"]
+        pass_filenames: false
+        always_run: true
 
   - repo: https://github.com/koalaman/shellcheck-precommit
     rev: v0.11.0
     hooks:
       - id: shellcheck
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
 
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.50.0
@@ -40,12 +50,14 @@ repos:
         entry: ./scripts/run-mypy.sh
         language: system
         pass_filenames: false
+        always_run: true
 
       - id: pyright
         name: pyright
         entry: ./scripts/run-pyright.sh
         language: system
         pass_filenames: false
+        always_run: true
 
       # Run test suite across workspace before push
       - id: pytest
@@ -53,4 +65,5 @@ repos:
         entry: ./scripts/run-coverage.sh
         language: system
         pass_filenames: false
+        always_run: true
         stages: [pre-push]
